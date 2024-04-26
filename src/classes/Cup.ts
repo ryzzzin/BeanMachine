@@ -28,14 +28,23 @@ export default class Cup {
   }
 
   public setDrink (drink: Drink): Cup {
-    if (this._serving === Serving.None && this._topping === Topping.None) {
+    const properServings = [Serving.None, Serving.Straw];
+    if (
+      this._drink === Drink.None &&
+      properServings.includes(this._serving)
+    ) {
       this._drink = drink;
     }
     return this;
   }
 
   public setTopping (topping: Topping): Cup {
-    if (this._drink !== Drink.None && this._serving === Serving.None) {
+    const properServings = [Serving.None, Serving.Straw];
+    if (
+      this._drink !== Drink.None &&
+      this._topping === Topping.None &&
+      properServings.includes(this._serving)
+    ) {
       this._topping = topping;
     }
     return this;

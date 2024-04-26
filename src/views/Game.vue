@@ -33,7 +33,7 @@
         </Transition>
       </div>
       <Transition name="resize">
-        <div class="game__cup" v-if="isGameStarted && !isCupAnimating">
+        <div :class="['game__cup', { shake: isCupShaking }]" v-if="isGameStarted && !isCupAnimating">
           <CupComponent :cup="cupData" />
         </div>
       </Transition>
@@ -115,6 +115,7 @@ export default defineComponent({
 
       isGameStarted: false,
       isCupAnimating: false,
+      isCupShaking: false,
       isOrderAnimating: false,
       ordersCount: 1,
 
@@ -129,15 +130,31 @@ export default defineComponent({
   },
   methods: {
     setDrink (drink: Drink): void {
-      this.currentCup.setDrink(drink);
+      this.playCupShake();
+      setTimeout(() => {
+        this.currentCup.setDrink(drink);
+      }, 125);
     },
 
     setTopping (topping: Topping): void {
-      this.currentCup.setTopping(topping);
+      this.playCupShake();
+      setTimeout(() => {
+        this.currentCup.setTopping(topping);
+      }, 125);
     },
 
     setServing (serving: Serving): void {
-      this.currentCup.setServing(serving);
+      this.playCupShake();
+      setTimeout(() => {
+        this.currentCup.setServing(serving);
+      }, 125);
+    },
+
+    playCupShake (): void {
+      this.isCupShaking = true;
+      setTimeout(() => {
+        this.isCupShaking = false;
+      }, 250);
     },
 
     resetCup (): void {
@@ -151,7 +168,9 @@ export default defineComponent({
     remakeCup (): void {
       if (this.currentCup.isEmpty()) return;
 
-      this.balance -= this.remakePrice;
+      if (this.currentCup.drink !== Drink.None) {
+        this.balance -= this.remakePrice;
+      }
       this.resetCup();
     },
 
@@ -224,6 +243,29 @@ export default defineComponent({
   opacity: 1;
 }
 
+.shake {
+  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%, 50%, 70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%, 60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
 .game {
   display: flex;
   justify-content: center;
@@ -248,6 +290,7 @@ export default defineComponent({
     align-items: center;
     gap: 24px;
     margin-bottom: 16px;
+    padding: 0 16px;
   }
 
   &__logo {
