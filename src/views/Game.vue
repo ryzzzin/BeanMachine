@@ -10,30 +10,33 @@
         </div>
       </div>
       <div class="game__orders orders">
-        <div class="orders__list"></div>
-        <div class="orders__item order" v-if="isGameStarted">
-          <div class="order__cup">
-            <CupComponent :cup="orderData.cup" />
+        <Transition name="slide">
+          <div class="orders__item order" v-if="isGameStarted && !isOrderAnimating">
+            <div class="order__cup">
+              <CupComponent :cup="orderData.cup" />
+            </div>
+            <div class="order__description">
+              <p class="order__name">
+                {{ orderData.name }}
+              </p>
+              <p class="order__message">
+                {{ orderData.message }}
+              </p>
+            </div>
+            <div class="order__counter">
+              # {{ ordersCount }}
+            </div>
+            <div class="order__avatar">
+              <img :src="orderData.getCustomerAvatarUrl()" alt="Customer">
+            </div>
           </div>
-          <div class="order__description">
-            <p class="order__name">
-              {{ orderData.name }}
-            </p>
-            <p class="order__message">
-              {{ orderData.message }}
-            </p>
-          </div>
-          <div class="order__counter">
-            # {{ ordersCount }}
-          </div>
-          <div class="order__avatar">
-            <img :src="orderData.getCustomerAvatarUrl()" alt="Customer">
-          </div>
+        </Transition>
+      </div>
+      <Transition name="resize">
+        <div class="game__cup" v-if="isGameStarted && !isCupAnimating">
+          <CupComponent :cup="cupData" />
         </div>
-      </div>
-      <div class="game__cup" v-if="isGameStarted">
-        <CupComponent :cup="cupData" />
-      </div>
+      </Transition>
       <div class="game__buttons">
         <div class="game__buttons-group">
           <ActionButton class="game__button" @click="setDrink(Drink.Coffee)">
@@ -111,6 +114,8 @@ export default defineComponent({
       Serving,
 
       isGameStarted: false,
+      isCupAnimating: false,
+      isOrderAnimating: false,
       ordersCount: 1,
 
       balance: 0,
@@ -136,7 +141,11 @@ export default defineComponent({
     },
 
     resetCup (): void {
-      this.currentCup = new Cup();
+      this.isCupAnimating = true;
+      setTimeout(() => {
+        this.currentCup = new Cup();
+        this.isCupAnimating = false;
+      }, 250);
     },
 
     remakeCup (): void {
@@ -164,6 +173,11 @@ export default defineComponent({
 
       this.currentOrder = new Order().randomize();
       this.resetCup();
+
+      this.isOrderAnimating = true;
+      setTimeout(() => {
+        this.isOrderAnimating = false;
+      }, 250);
     },
 
     openOptions (): void {
@@ -182,6 +196,34 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
+.resize-enter-active, .resize-leave-active {
+  transition: all 0.25s;
+}
+
+.resize-enter-from, .resize-leave-to {
+  transform: scale(0.5);
+  opacity: 0;
+}
+
+.resize-enter-to, .resize-leave-from {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.slide-enter-active, .slide-leave-active {
+  transition: all 0.25s;
+}
+
+.slide-enter-from, .slide-leave-to {
+  transform: translateX(-300px) scale(0.8);
+  opacity: 0;
+}
+
+.slide-enter-to, .slide-leave-from {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+
 .game {
   display: flex;
   justify-content: center;
@@ -205,6 +247,7 @@ export default defineComponent({
     justify-content: space-between;
     align-items: center;
     gap: 24px;
+    margin-bottom: 16px;
   }
 
   &__logo {
