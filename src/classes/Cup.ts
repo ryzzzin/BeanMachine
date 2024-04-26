@@ -28,7 +28,7 @@ export default class Cup {
   }
 
   public setDrink (drink: Drink): Cup {
-    if (this._serving === Serving.None) {
+    if (this._serving === Serving.None && this._topping === Topping.None) {
       this._drink = drink;
     }
     return this;
