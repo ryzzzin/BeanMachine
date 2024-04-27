@@ -14,7 +14,6 @@ export default class Cup {
   }
 
   // Getters and setters
-
   public get drink (): Drink {
     return this._drink;
   }

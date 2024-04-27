@@ -6,83 +6,83 @@
           <img class="game__logo" src="@/assets/sprites/logo.png"  alt="">
         </div>
         <div class="game__balance">
-          ${{ balance }}
+          ${{ game.balance }}
         </div>
       </div>
       <div class="game__orders orders">
         <Transition name="slide">
-          <div class="orders__item order" v-if="isGameStarted && !isOrderAnimating">
+          <div class="orders__item order" v-if="(gameState instanceof InProgressGameState) && !game.isOrderAnimating">
             <div class="order__cup">
-              <CupComponent :cup="orderData.cup" />
+              <CupComponent :cup="orderCupData" />
             </div>
             <div class="order__description">
               <p class="order__name">
-                {{ orderData.name }}
+                {{ game.currentOrder.name }}
               </p>
               <p class="order__message">
-                {{ orderData.message }}
+                {{ game.currentOrder.message }}
               </p>
             </div>
             <div class="order__counter">
-              # {{ ordersCount }}
+              # {{ game.ordersCount }}
             </div>
             <div class="order__avatar">
-              <img :src="orderData.getCustomerAvatarUrl()" alt="Customer">
+              <img :src="game.currentOrder.getCustomerAvatarUrl()" alt="Customer">
             </div>
           </div>
         </Transition>
       </div>
       <Transition name="resize">
-        <div :class="['game__cup', { shake: isCupShaking }]" v-if="isGameStarted && !isCupAnimating">
-          <CupComponent :cup="cupData" />
+        <div :class="['game__cup', { shake: game.isCupShaking }]" v-if="(gameState instanceof InProgressGameState) && !game.isCupAnimating">
+          <CupComponent :cup="currentCupData" />
         </div>
       </Transition>
       <div class="game__buttons">
         <div class="game__buttons-group">
-          <ActionButton class="game__button" @click="setDrink(Drink.Coffee)">
+          <ActionButton class="game__button" @click="game.setDrink(Drink.Coffee)">
             <img src="@/assets/sprites/buttons/coffee.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="setDrink(Drink.Matcha)">
+          <ActionButton class="game__button" @click="game.setDrink(Drink.Matcha)">
             <img src="@/assets/sprites/buttons/matcha.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="setDrink(Drink.Milkshake)">
+          <ActionButton class="game__button" @click="game.setDrink(Drink.Milkshake)">
             <img src="@/assets/sprites/buttons/milkshake.svg" alt="">
           </ActionButton>
         </div>
         <div class="game__buttons-group">
-          <ActionButton class="game__button" @click="setTopping(Topping.Ice)">
+          <ActionButton class="game__button" @click="game.setTopping(Topping.Ice)">
             <img src="@/assets/sprites/buttons/ice.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="setTopping(Topping.Cream)">
+          <ActionButton class="game__button" @click="game.setTopping(Topping.Cream)">
             <img src="@/assets/sprites/buttons/cream.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="setTopping(Topping.Marshmallow)">
+          <ActionButton class="game__button" @click="game.setTopping(Topping.Marshmallow)">
             <img src="@/assets/sprites/buttons/marshmallow.svg" alt="">
           </ActionButton>
         </div>
         <div class="game__buttons-group">
-          <ActionButton class="game__button" @click="setServing(Serving.Straw)">
+          <ActionButton class="game__button" @click="game.setServing(Serving.Straw)">
             <img src="@/assets/sprites/buttons/straw.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="setServing(Serving.CookieCap)">
+          <ActionButton class="game__button" @click="game.setServing(Serving.CookieCap)">
             <img src="@/assets/sprites/buttons/cookie.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="setServing(Serving.TransparentCap)">
+          <ActionButton class="game__button" @click="game.setServing(Serving.TransparentCap)">
             <img src="@/assets/sprites/buttons/cap.svg" alt="">
           </ActionButton>
         </div>
         <div class="game__buttons-group">
-          <ActionButton class="game__button" @click="startGame" v-if="!isGameStarted">
+          <ActionButton class="game__button" @click="game.startGame()" v-if="(game.state instanceof NotStartedGameState)">
             <img src="@/assets/sprites/buttons/done.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="nextOrder" v-else>
+          <ActionButton class="game__button" @click="game.nextOrder()" v-else>
             <img src="@/assets/sprites/buttons/done.svg" alt="">
           </ActionButton>
 
-          <ActionButton class="game__button" @click="remakeCup">
+          <ActionButton class="game__button" @click="game.remakeCup()">
             <img src="@/assets/sprites/buttons/cancel.svg" alt="">
           </ActionButton>
-          <ActionButton class="game__button" @click="openOptions">
+          <ActionButton class="game__button" @click="openOptions()">
             <img src="@/assets/sprites/buttons/options.svg" alt="">
           </ActionButton>
         </div>
@@ -100,6 +100,10 @@ import Order from '@/classes/Order';
 import Drink from '@/types/Drink';
 import Topping from '@/types/Topping';
 import Serving from '@/types/Serving';
+import Game from '@/classes/Game';
+import GameState from '@/classes/GameState';
+import InProgressGameState from '@/classes/InProgressGameState';
+import NotStartedGameState from '@/classes/NotStartedGameState';
 
 export default defineComponent({
   name: 'Game',
@@ -112,103 +116,26 @@ export default defineComponent({
       Drink,
       Topping,
       Serving,
+      InProgressGameState,
+      NotStartedGameState,
 
-      isGameStarted: false,
-      isCupAnimating: false,
-      isCupShaking: false,
-      isOrderAnimating: false,
-      ordersCount: 1,
-
-      balance: 0,
-      doneOrderPrice: 10,
-      mistakePrice: 6,
-      remakePrice: 2,
-
-      currentCup: new Cup(),
-      currentOrder: new Order(),
+      game: new Game(),
     };
   },
   methods: {
-    setDrink (drink: Drink): void {
-      this.playCupShake();
-      setTimeout(() => {
-        this.currentCup.setDrink(drink);
-      }, 125);
-    },
-
-    setTopping (topping: Topping): void {
-      this.playCupShake();
-      setTimeout(() => {
-        this.currentCup.setTopping(topping);
-      }, 125);
-    },
-
-    setServing (serving: Serving): void {
-      this.playCupShake();
-      setTimeout(() => {
-        this.currentCup.setServing(serving);
-      }, 125);
-    },
-
-    playCupShake (): void {
-      this.isCupShaking = true;
-      setTimeout(() => {
-        this.isCupShaking = false;
-      }, 250);
-    },
-
-    resetCup (): void {
-      this.isCupAnimating = true;
-      setTimeout(() => {
-        this.currentCup = new Cup();
-        this.isCupAnimating = false;
-      }, 250);
-    },
-
-    remakeCup (): void {
-      if (this.currentCup.isEmpty()) return;
-
-      if (this.currentCup.drink !== Drink.None) {
-        this.balance -= this.remakePrice;
-      }
-      this.resetCup();
-    },
-
-    startGame (): void {
-      this.currentOrder = new Order().randomize();
-      this.resetCup();
-      this.isGameStarted = true;
-    },
-
-    nextOrder (): void {
-      this.ordersCount++;
-
-      const orderedCup = this.currentOrder.cup as Cup;
-      if (this.currentCup.isEqual(orderedCup)) {
-        this.balance += this.doneOrderPrice;
-      } else {
-        this.balance -= this.mistakePrice;
-      }
-
-      this.currentOrder = new Order().randomize();
-      this.resetCup();
-
-      this.isOrderAnimating = true;
-      setTimeout(() => {
-        this.isOrderAnimating = false;
-      }, 250);
-    },
-
     openOptions (): void {
       location.reload();
     },
   },
   computed: {
-    cupData (): Cup {
-      return this.currentCup as Cup;
+    currentCupData (): Cup {
+      return this.game.currentCup as Cup;
     },
-    orderData (): Order {
-      return this.currentOrder as Order;
+    orderCupData (): Cup {
+      return this.game.currentOrder.cup as Cup;
+    },
+    gameState (): GameState {
+      return this.game.state as GameState;
     },
   }
 });
